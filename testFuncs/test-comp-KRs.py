@@ -6,6 +6,7 @@ test-comp-KRs.py
   Date      Who  Comments
 ==========  ===  =========================================================================
 2017-12-31  JRM  Test the compKRs function
+2018-01-01  JRM  Print dt2Conv revision 
 
 """
 
@@ -18,6 +19,8 @@ import time
 import java.io as jio
 import gov.nist.microanalysis.EPQLibrary as epq
 import dtsa2.dt2Conv as dt2c
+
+print(dt2c.__revision__)
 
 start = time.time()
 

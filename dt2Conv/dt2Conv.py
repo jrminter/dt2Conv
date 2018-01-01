@@ -19,8 +19,8 @@ import dtsa2.dt2Conv as dt2c
 
 """
 
-__revision__ = "$Id: dt2Conv.py John R. Minter 2017-12-31 $"
-__version__ = "0.0.1"
+__revision__ = "$Id: dt2Conv.py John R. Minter 2018-01-01 $"
+__version__ = "0.0.11"
 
 import sys
 import os
@@ -76,7 +76,7 @@ def calcMAN(cf, name):
     """
     calcMAN(cf, name)
 
-    Create a matrial object from a chemical formula and output
+    Create a material object from a chemical formula and output
     the mean atomic number.
 
     Input
@@ -170,9 +170,9 @@ def addMatToDatabase(mat, name, density):
     mat - a DTSA material
         The material to add
     name - string
-        The name to asssociate
+        The name to associate
     density - float
-        the denisty in g/cm3
+        the density in g/cm3
 
     Returns
     -------
@@ -264,9 +264,9 @@ def multiFilmBSE(layers, e0=20.0, nTraj=1000, bOutFull=False,
     Parameters
     ----------
     layers - an iterable list of [material,thickness].
-        Note thematerials must have associated densities.
+        Note the materials must have associated densities.
     e0 - float (20)
-        The accekerating voltage in kV
+        The accelerating voltage in kV
     nTraj - integer
         The number of trajectories to run
     bOutFull - boolean (False)
@@ -527,7 +527,7 @@ def compPeakIntegral(spc, ePeak, wid, digits=1, display=False):
 def intCKandSiK(spc, digits=3, display=True):
     """intCkandSiK(spc, digits=3, display=True)
 
-    Integrate the background-subtracted spectrum wiith C-K and Si-K peaks.
+    Integrate the background-subtracted spectrum with C-K and Si-K peaks.
 
     Provides a useful way to estimate the C thickness.
 
@@ -549,7 +549,7 @@ def intCKandSiK(spc, digits=3, display=True):
 
     Returns
     -------
-    ret: A dictonary where the key is the X-ray transition
+    ret: A dictionary where the key is the X-ray transition
         and the mean integral an d standard deviation in
         units of cps-per-nA if spectrum contains a probe
         current or units of cps if the probe current is missing.
@@ -611,7 +611,7 @@ def intCK(spc, digits=3, display=True):
 
     Returns
     -------
-    ret: A dictonary where the key is the X-ray transition
+    ret: A dictionary where the key is the X-ray transition
         and the mean integral an d standard deviation in
         units of cps-per-nA if spectrum contains a probe
         current or units of cps if the probe current is missing.
@@ -668,7 +668,7 @@ def intSiK(spc, digits=3, display=True):
 
     Returns
     -------
-    ret: A dictonary where the key is the X-ray transition
+    ret: A dictionary where the key is the X-ray transition
         and the mean integral an d standard deviation in
         units of cps-per-nA if spectrum contains a probe
         current or units of cps if the probe current is missing.
@@ -724,7 +724,7 @@ def intCuK(spc, digits=3, display=True):
 
     Returns
     -------
-    ret: A dictonary where the key is the X-ray transition
+    ret: A dictionary where the key is the X-ray transition
         and the mean integral an d standard deviation in
         units of cps-per-nA if spectrum contains a probe
         current or units of cps if the probe current is missing.
@@ -780,7 +780,7 @@ def intCuL(spc, digits=3, display=True):
 
     Returns
     -------
-    ret: A dictonary where the key is the X-ray transition
+    ret: A dictionary where the key is the X-ray transition
         and the mean integral an d standard deviation in
         units of cps-per-nA if spectrum contains a probe
         current or units of cps if the probe current is missing.
@@ -1149,7 +1149,7 @@ def clearAllSpectra():
 def compKRs(unSpc, stds, trs, det, e0, digits=5):
     """compKRs(unSpc, stds, trs, det, e0, digits=5)
 
-    Peforms a MLLSQ filter-fit of unknown spectrum (unSpc),
+    Performs a MLLSQ filter-fit of unknown spectrum (unSpc),
     to the standard spectra in a list of dictionaries of standards.
 
     Parameters

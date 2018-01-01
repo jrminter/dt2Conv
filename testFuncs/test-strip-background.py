@@ -6,6 +6,7 @@ test-strip-background.py
   Date      Who  Comments
 ==========  ===  =========================================================================
 2017-12-31  JRM  Test the StripBackground function
+2018-01-01  JRM  Print dt2Conv revision
 
 """
 
@@ -20,6 +21,8 @@ import gov.nist.microanalysis.EPQLibrary as epq
 import dtsa2.dt2Conv as dt2c
 
 start = time.time()
+
+print(dt2c.__revision__)
 
 homDir = os.environ['HOME']
 wrkDir = homDir + "/Documents/git/dt2Conv/testFuncs"
