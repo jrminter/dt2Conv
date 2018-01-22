@@ -12,15 +12,20 @@ call with:
 
 import dtsa2.dt2Conv as dt2c
 
-  Date      Who   Ver    Comment
-----------  ---  -----   ------------------------------------------
-2017-12-31  JRM  0.0.1   First test for DTSA-II Jupiter
+  Date      Who   Ver     Comment
+----------  ---  ------   ------------------------------------------
+2017-12-31  JRM  0.0.1    First test for DTSA-II Jupiter
+2018-01-01  JRM  0.0.11   Added test functions
+2018-01-22  JRM  0.0.2    Added calcEdsKF - an update of the function
+                          zaf in __init__.py to return an list of 
+                          transitions and kfactors for EDS with a
+                          verbose flag to limit printing if desired
 
 
 """
 
-__revision__ = "$Id: dt2Conv.py John R. Minter 2018-01-01 $"
-__version__ = "0.0.11"
+__revision__ = "$Id: dt2Conv.py John R. Minter 2018-01-22 $"
+__version__ = "0.0.2"
 
 import sys
 import os
@@ -1208,3 +1213,121 @@ def compKRs(unSpc, stds, trs, det, e0, digits=5):
         k=round(checkNaN(krs.getKRatio(tr)), digits)
         kr.append(k)
     return kr
+
+def calcEdsKF(comp, det, e0, alg=epq.XPP1991(),
+              mac=epq.MassAbsorptionCoefficient.Chantler2005,
+              xtra=epq.SpectrumProperties(),
+              stds=None, verbose=True):
+    """
+    calcEdsKF(comp, det, e0, alg=epq.XPP1991(),
+             mac=epq.MassAbsorptionCoefficient.Chantler2005,
+             xtra=epq.SpectrumProperties(),
+             stds=None, verbose=True)
+
+    Calculate EDS K-factors for a composition, otionally using
+    standards. This can be helful for analyses using compound standards.
+    This was modified from the zaf function in __init__.py
+
+    Parameters
+    ----------
+    comp: epq.Composition
+        The composition for K-factor computation
+    det: epq.Library.EDSDetector
+        The detector to specify key properties
+    e0: float
+        The beam energy in kV
+    alg: algorithm for phirhoz (epq.XPP1991())
+        epq.PAP1991() is another good choice
+    mac: epq.MassAbsorptionCoefficient.Chantler2005
+        Algorithm for mass absorption
+    xtra: spectrum properties (epq.SpectrumProperties())
+        Spectrum properties to pass detector
+    stds: A dictionary of standards to use if desired (None)
+        Standards. If you don't specify stds then pure elements are
+        assumed. Otheerwise a dictionary mapping an element to a \
+        composition Example: {"Si": sio2} where sio2 is a composition
+    verbose: boolean (True)
+        print sll output
+
+    Returns
+    -------
+    (lTrans, lK) - a list of transitions and a list of k-factors
+
+    Example
+    -------
+    ver = False
+    det = findDetector("Oxford p4 05eV 2K")
+    e0  = 15.
+    sp = epq.SpectrumProperties()
+    sio2 = material("SiO2", density=2.65)
+    si  = material("Si", density=2.648)
+    resPAP = calcEdsKF(si, det, e0, epq.PAP1991(),
+             epq.MassAbsorptionCoefficient.Chantler2005,
+             xtra=sp, stds={"Si": sio}, verbose=ver)
+    print(resPAP)
+    """
+    lK =[]
+    lTrans = dt2.majorTransitionSets(det, comp, e0, 0.01)
+    if isinstance(comp, epq.ISpectrumData):
+        cp = comp.getProperties()
+        t = cp.getCompositionWithDefault(epq.SpectrumProperties.MicroanalyticalComposition, None)
+        if not t:
+          t = cp.getCompositionWithDefault(epq.SpectrumProperties.StandardComposition, None)
+        comp = t
+    comp = dt2.material(comp)
+    if (comp <> None) and (comp.getElementCount() > 0):
+        oldStrat = epq.AlgorithmUser.getGlobalStrategy()
+        s = epq.Strategy()
+        s.addAlgorithm(epq.MassAbsorptionCoefficient, mac)
+        epq.AlgorithmUser.applyGlobalOverride(s)
+        props = epq.SpectrumProperties()
+        props.setDetector(det)
+        props.setNumericProperty(epq.SpectrumProperties.BeamEnergy, e0)
+        props.addAll(xtra)
+        if verbose:
+            print "Material\t%s" % (comp.descriptiveString(0))
+            print "Detector\t%s" % det
+            print "Algorithm\t%s" % alg.getName()
+            print "MAC\t%s" % alg.getAlgorithm(epq.MassAbsorptionCoefficient).getName()
+            print "E0\t%g keV" % props.getNumericProperty(epq.SpectrumProperties.BeamEnergy)
+            print "Take-off\t%g%s" % (jl.Math.toDegrees(epq.SpectrumUtils.getTakeOffAngle(props)), epq.SpectrumProperties.TakeOffAngle.getUnits())
+        for sp in xtra.getPropertySet():
+            if verbose:
+                print "%s\t%s" % (sp, xtra.getTextProperty(sp))
+        if stds:
+            conv = {}
+            for z, c in stds.iteritems():
+                conv[dt2.element(z)] = dt2.material(c)
+            stds = conv
+        if verbose:
+            print "\n%-15s\tStandard\tEnergy\t ZAF\t  Z\t  A\t  F\tk-ratio" % "IUPAC"
+        for xrts in dt2.majorTransitionSets(det, comp, e0, 0.01):
+            z, a, f, zaf, w = 0.0, 0.0, 0.0, 0.0, 0.0
+            elm = xrts.getElement()
+            std = (stds.get(elm) if stds else None)
+            ww = (std.weightFraction(elm, False) if std else 1.0)
+            nComp = comp
+            if comp.weightFraction(elm, False) < 1.0e-8:
+                 nComp = epq.Composition(comp)
+                 nComp.addElement(elm, 1.0e-8)
+            for xrt in xrts:
+                if epq.FromSI.keV(xrt.getEdgeEnergy()) > 0.9 * e0:
+                     continue
+                rzaf = (alg.relativeZAF(nComp, xrt, props, std) if std else alg.relativeZAF(nComp, xrt, props))
+                wgt = xrt.getWeight(epq.XRayTransition.NormalizeFamily)
+                z = z + wgt * rzaf[0] 
+                a = a + wgt * rzaf[1] 
+                f = f + wgt * rzaf[2] 
+                zaf = zaf + wgt * rzaf[3]
+                w = w + wgt
+                eTr = epq.FromSI.keV(xrt.getEnergy())
+            if w < 1.0e-10:
+                continue
+            z, a, f, zaf = z / w, a / w, f / w, zaf / w
+            k = zaf * nComp.weightFraction(elm, False) / ww
+            lK.append(k)
+            if verbose:
+                print "%-15s\t%s\t%2.4f\t%1.4f\t%1.4f\t%1.4f\t%1.4f\t%1.6f" % (xrts, (std if std else "Pure %s" % elm.toAbbrev()), eTr, zaf, z, a, f, k)
+    # Restore previous algorithm preferences
+    epq.AlgorithmUser.applyGlobalOverride(oldStrat)
+    return(lTrans, lK)
