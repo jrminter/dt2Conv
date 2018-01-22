@@ -19,7 +19,8 @@ import dtsa2.dt2Conv as dt2c
 2018-01-22  JRM  0.0.2    Added calcEdsKF - an update of the function
                           zaf in __init__.py to return an list of 
                           transitions and kfactors for EDS with a
-                          verbose flag to limit printing if desired
+                          verbose flag to limit printing if desired.
+                          Fixed prz functions.
 
 
 """
@@ -818,9 +819,9 @@ def intCuL(spc, digits=3, display=True):
 
     return out
 
-def computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
+def computePhiRhoZ(mat, det, e0, csv, nSteps=200, usePAP=True):
     """
-    computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
+    computePhiRhoZ(mat, det, e0, csv, nSteps=200, usePAP=True):
     Compute a phi-rho-z curve
 
     Parameters
@@ -831,8 +832,6 @@ def computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
         The detector to use
     e0: float
         The beam energy in kV
-    xrts: XRayTransitionSet
-        the transitions to compute
     csv: string
         Path to .csv file
     nSteps: int (200)
@@ -845,6 +844,7 @@ def computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
     None - but writes output to file csv
 
     """
+    xrts = dt2.majorTransitions(mat, e0)
     rhoZmax = epq.ElectronRange.KanayaAndOkayama1972.compute(mat, epq.ToSI.keV(e0))
     if usePAP:
         alg = epq.PAP1991()
@@ -858,7 +858,6 @@ def computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
     fi = open(csv, 'w')
     line = res + '\n'
     fi.write(line)
-
     for step in range(0, nSteps):
         rz = step * rhoZmax / nSteps
         res = "%d,%g" % (step, 100.0 * rz) # in mg/cm^2
@@ -869,10 +868,12 @@ def computePhiRhoZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
         fi.write(line)
         # print(res)
     fi.close()
+    print("Wrote output to %s" % csv)
+    
 
-def computePhiRhoReportZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
+def computePhiRhoReportZ(mat, det, e0, csv, nSteps=200, usePAP=True):
     """
-    computePhiRhoReportZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True)
+    computePhiRhoReportZ(mat, det, e0, csv, nSteps=200, usePAP=True)
 
     Compute a phi-rho-z curve and report a depth profile in Z
     The Z values are in microns.
@@ -885,8 +886,6 @@ def computePhiRhoReportZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
         The detector to use
     e0: float
         The beam energy in kV
-    xrts: XRayTransitionSet
-        the transitions to compute
     csv: string
         Path to .csv file
     nSteps: int (200)
@@ -899,6 +898,7 @@ def computePhiRhoReportZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
     None - but writes output to file csv
 
     """
+    xrts = dt2.majorTransitions(mat, e0)
     rhoZmax = epq.ElectronRange.KanayaAndOkayama1972.compute(mat, epq.ToSI.keV(e0))
     zMax = rhoZmax / mat.getDensity()
     if usePAP:
@@ -926,6 +926,7 @@ def computePhiRhoReportZ(mat, det, e0, xrts, csv, nSteps=200, usePAP=True):
         fi.write(line)
         # print(res)
     fi.close()
+    print("Wrote output to %s" % csv)
 
 def getSpectrumFromDataCube(hsVecCube, det, spcFile, x, y, mapTime, pc=1.0, bDebug=False):
     """getSpectrumFromDataCube(hsVecCube, det, spcFile, x, y, mapTime, pc=1.0, bDebug=False)
