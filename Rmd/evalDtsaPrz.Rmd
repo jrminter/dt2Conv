@@ -1,0 +1,153 @@
+---
+title: "Evaluation of DTSA-II &Phi;(&rho;z)"
+author: "J. R. Minter"
+date: "Started: 2018-01-23. Last modified: 2018-01-23"
+output:
+  html_document:
+    csl: ./inc/american-chemical-society-with-titles-sentence-case-doi.csl
+    css: ./inc/jm-gray-vignette.css
+    toc: true
+    number_sections: yes
+bibliography: ./inc/dt2Conv.bib
+---
+
+
+# Introduction
+
+I need to verify the performance of the DTSA-II PhiRhoZ results output by
+the functions in the **mcSimulate3** library. To do this I simulated ZnO2.
+
+# Analysis
+
+## Step 1: Load R packages and the data.
+
+First, let's load the packages we need.
+
+```{r, message=FALSE}
+library(ggplot2)
+library(latex2exp)
+library(rEDS)
+library(pander)
+
+bVerbose=TRUE
+```
+
+Now let's create a dataframe from the MC3 Phi-Rho-Z **.tsv** file
+
+
+```{r, readMc315kV,message=FALSE}
+id <- '../data/csv/'
+fi <- 'ZnO-15.0-keV-MC3-20000-traj-prz.tsv'
+df <- prepDataframeDtsaMcPhiRhoZ(id, fi)
+```
+
+
+## Step 2: Make a dataframe with the transitions we care about.
+
+While we are at it, let's change the dataframe headers to make
+it easier to make the plots... We are plotting the generated
+and emitted X-rays. Let's make simple mnemonics...
+
+
+```{r makeMC3DF}
+
+z <- df$Z.um
+znkgen <- df$Gen.Zn.K.L3.
+znkemi <- df$Emit.Zn.K.L3.
+znlgen <- df$Gen.Zn.L3.M5.
+znlemi <- df$Emit.Zn.L3.M5.
+
+if(bVerbose) print(head(znkgen))
+if(bVerbose)print(head(znkemi))
+
+dfMC3 <- data.frame(Z.um=z,
+                  Zn.K.Gen=znkgen,
+                  Zn.K.Emi=znkemi,
+                  Zn.L.Gen=znlgen,
+                  Zn.L.Emi=znlemi)
+
+pander(head(dfMC3))
+```
+
+Note that my initial assumption was that the distance values were in microns.
+
+
+## Step 3 - Make a DTSA PAP1991 phi-rho-z dataframe
+
+```{r, readPAP15kV,message=FALSE}
+fi <- '../data/csv/ZnO-prz-Z-15-kV.csv'
+df <- read.csv(fi, header=TRUE)
+
+z <- df$Z.um
+znkgen <- df$G.Zn.K.L3.
+znkemi <- df$E.Zn.K.L3.
+znlgen <- df$G.Zn.L3.M5.
+znlemi <- df$E.Zn.L3.M5.
+
+df <- data.frame(Z.um=z,
+                        Zn.K.Gen=znkgen,
+                        Zn.K.Emi=znkemi,
+                        Zn.L.Gen=znlgen,
+                        Zn.L.Emi=znlemi)
+dfPAP1991  <- df[-1,] # get rid of zero row
+rownames(dfPAP1991) <- c()
+pander(head(dfPAP1991))
+```
+
+
+## Step 4: Measure the maximum values of the emitted data
+
+```{r, maxVals}
+znKMC3 <- max(dfMC3$Zn.K.Emi)
+znKPAP1991 <- max(dfPAP1991$Zn.K.Emi)
+znLMC3 <- max(dfMC3$Zn.L.Emi)
+znLPAP1991 <- max(dfPAP1991$Zn.L.Emi)
+
+ID <- c("Zn-K MC3", "Zn-K PAP", "Zn-L MC3", "Zn-L PAP")
+maxPRZ <- c(znKMC3, znKPAP1991, znLMC3, znLPAP1991)
+
+dfMax <- data.frame(ID=ID, maxPRZ=maxPRZ)
+
+pander(dfMax)
+```
+
+Note that the Zn-L MC3 maximum is much too large.
+
+## Step 5: Plot the Zn K data
+
+```{r, pltZnK}
+
+szP <- 2
+szL <- 4
+
+plt <- ggplot() +
+       geom_point(data=dfPAP1991, aes(x=Z.um, y=Zn.K.Emi),
+                  size = szP, colour="darkblue") +
+       annotate("text", label = 'PAP1991 Zn K-L3 emitted',
+                       x = 0.75, y = 1.25,
+                       size = szL, colour = "darkblue") +
+       
+       geom_point(data=dfMC3, aes(x=Z.um, y=Zn.K.Emi),
+                  size = szP, colour="darkred") +
+       annotate("text", label = 'MC3 Zn K-L3 emitted',
+                       x = 0.75, y = 1.15,
+                       size = szL, colour = "darkred") +
+       ylab(label="Zn K-L3 \U03D5(\U03C1z)") +
+       xlab("depth [\U00B5m]") +
+       ggtitle("DTSA-II measures or of Zn-K \U03D5(\U03C1z) at 15 kV") +
+       theme(axis.text=element_text(size=12),
+             axis.title=element_text(size=14),
+             plot.title = element_text(hjust = 0.5))
+  
+
+print(plt)
+```
+
+Something is still not right...
+
+# References
+
+
+
+
+
